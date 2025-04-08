@@ -19,4 +19,9 @@
 ```bash
   docker-compose up -d
 ```
+
+# En modo desarrollo
+```bash
+  npm run start:dev
+```
  
