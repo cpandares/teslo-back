@@ -32,5 +32,11 @@ export class CreateProductDto {
     gender: string;
 
 
+    @IsString({ each: true })
+    @IsArray()
+    @IsOptional()
+    tags: string[];
+
+
 
 }
