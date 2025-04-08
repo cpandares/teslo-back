@@ -24,4 +24,9 @@
 ```bash
   npm run start:dev
 ```
+
+# Ejecutar Seed de la base datos
+```bash
+  localhost:3000/api/seed
+```
  
