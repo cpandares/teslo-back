@@ -13,6 +13,7 @@ import { AuthController } from './auth.controller';
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   imports: [
+    
     ConfigModule,  
     TypeOrmModule.forFeature([
       User
