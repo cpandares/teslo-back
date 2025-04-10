@@ -31,7 +31,7 @@ export class AuthService {
 
       const { password: _, ...userWithoutPassword } = user; // Exclude password from the response
       return {
-        userWithoutPassword:user,
+        userWithoutPassword,
         token: this.generateJWT({ id: user.id }), // Generate JWT token
       };
     } catch (error) {
@@ -87,6 +87,14 @@ export class AuthService {
   private generateJWT(payload: JwtPayload):string {
     const token = this.jwtService.sign( payload );
     return token;
+  }
+
+
+  checkAuthStatus( user: User ) {
+    return {
+      ...user,
+      token: this.generateJWT({ id: user.id }), // Generate JWT token
+    };
   }
 
   

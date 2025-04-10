@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { ProductsService } from 'src/products/products.service';
-import { initialData } from './data/seed';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/auth/entities/user.entity';
 import { Repository } from 'typeorm';
 
+
+import { ProductsService } from 'src/products/products.service';
+import { initialData } from './data/seed';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class SeedService {
@@ -37,6 +38,8 @@ export class SeedService {
     seedUsers.forEach(user => {
       users.push(this.userRepository.create(user));
     });
+    /* hash password */
+
   const newUsers =  await this.userRepository.save(seedUsers);
     return newUsers[0];
   }
