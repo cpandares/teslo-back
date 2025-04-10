@@ -32,7 +32,7 @@ export class AuthService {
       const { password: _, ...userWithoutPassword } = user; // Exclude password from the response
       return {
         userWithoutPassword:user,
-        token: this.generateJWT({ email: user.email }), // Generate JWT token
+        token: this.generateJWT({ id: user.id }), // Generate JWT token
       };
     } catch (error) {
       this.handleDBUserError(error);
@@ -48,7 +48,7 @@ export class AuthService {
       const { password, email } = loginUserDto;
       const user = await this.userRepository.findOne(
           { where: { email } ,
-          select: { email:true, password: true }
+          select: { email:true, password: true, id:true }
         });
        
         
@@ -61,10 +61,10 @@ export class AuthService {
         throw new BadRequestException('Invalid credentials');
       }
 
-      const { password: _, ...userWithoutPassword } = user; // Exclude password from the response
+      const {id, password: _, ...userWithoutPassword } = user; // Exclude password from the response
       return {
         userWithoutPassword,
-        token: this.generateJWT({ email }), // Generate JWT token
+        token: this.generateJWT({ id }), // Generate JWT token
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
