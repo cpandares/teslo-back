@@ -4,6 +4,7 @@ import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import { Product,ProductImage } from './entities';
 import { AuthModule } from 'src/auth/auth.module';
+import { PassportModule } from '@nestjs/passport';
 
 
 
@@ -11,11 +12,12 @@ import { AuthModule } from 'src/auth/auth.module';
   controllers: [ProductsController],
   providers: [ProductsService],
   imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forFeature([
       Product,
       ProductImage,
-      AuthModule
-    
+      AuthModule,
+      
     ])
   ],
   exports: [

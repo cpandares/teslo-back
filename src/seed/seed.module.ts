@@ -10,7 +10,8 @@ import { AuthModule } from 'src/auth/auth.module';
   providers: [SeedService],
   imports: [
     ProductsModule,
-    AuthModule
+    AuthModule,
+    
   ]
 })
 export class SeedModule {}
