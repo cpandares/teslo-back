@@ -29,4 +29,9 @@
 ```bash
   localhost:3000/api/seed
 ```
+
+# Documentación de la API
+```bash
+  localhost:3000/api
+```
  
