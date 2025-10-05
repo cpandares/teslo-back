@@ -16,9 +16,8 @@ import { PassportModule } from '@nestjs/passport';
     TypeOrmModule.forFeature([
       Product,
       ProductImage,
-      AuthModule,
-      
-    ])
+    ]),
+    AuthModule,
   ],
   exports: [
     TypeOrmModule,

@@ -43,6 +43,23 @@ export class ProductsService {
     }
   }
 
+  // High-throughput bulk insert for massive seeding. Expects pre-validated and unique fields (title, slug).
+  async bulkInsertProducts(products: Array<Partial<Product>>) {
+    if (!products?.length) return { identifiers: [], generatedMaps: [], raw: [] };
+    try {
+      // Use insert to bypass lifecycle hooks for speed; caller must compute slug.
+      const result = await this.productRepository
+        .createQueryBuilder()
+        .insert()
+        .into(Product)
+        .values(products)
+        .execute();
+      return result;
+    } catch (error) {
+      this.handleDBErrors(error);
+    }
+  }
+
   async findAll(paginationDto: PaginationDto) {
     const { offset, limit } = paginationDto;
     const products = await this.productRepository.find({
@@ -52,7 +69,9 @@ export class ProductsService {
         images: true,
       },
     });
+    const totalRegistros = await this.productRepository.count();
     return products.map( product => ({
+      totalRegistros,
       ...product,
       images: product.images?.map( image => image.url )
     }) )

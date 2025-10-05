@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeedService } from './seed.service';
 import { SeedController } from './seed.controller';
 
 import { ProductsModule } from 'src/products/products.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { User } from 'src/auth/entities/user.entity';
 
 @Module({
   controllers: [SeedController],
@@ -11,6 +13,7 @@ import { AuthModule } from 'src/auth/auth.module';
   imports: [
     ProductsModule,
     AuthModule,
+    TypeOrmModule.forFeature([User]),
     
   ]
 })
