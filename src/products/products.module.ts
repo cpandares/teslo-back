@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
-import { Product,ProductImage } from './entities';
+import { Product,ProductImage, Articulo } from './entities';
 import { AuthModule } from 'src/auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
 
@@ -16,6 +16,7 @@ import { PassportModule } from '@nestjs/passport';
     TypeOrmModule.forFeature([
       Product,
       ProductImage,
+      Articulo,
     ]),
     AuthModule,
   ],

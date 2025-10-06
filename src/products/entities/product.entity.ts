@@ -21,7 +21,9 @@ export class Product {
         description:'Title of the product',
         uniqueItems:true,
     })
-    @Column('text',{
+    @Column({
+        type: 'varchar',
+        length: 255,
         unique:true,
         nullable:false,
     })
@@ -52,9 +54,10 @@ export class Product {
         description:'Slug for the product, used for SEO and URL purposes',
         uniqueItems:true,
     })
-    @Column('text', {
+    @Column({
+        type: 'varchar',
+        length: 255,
         unique:true,
-
     })
     slug:string;
 
@@ -74,9 +77,9 @@ export class Product {
         default:[],
         isArray:true,
     })
-    @Column('text', {
-        array:true,
-        default:[],        
+    @Column('simple-array', {
+        nullable: true,
+        default: '',
     })
     sizes: string[];
 
@@ -84,7 +87,7 @@ export class Product {
         example:'M',
 
     })
-    @Column('text')
+    @Column({ type: 'varchar', length: 20 })
     gender:string;
 
     @ApiProperty({
@@ -93,9 +96,9 @@ export class Product {
         default:[],
         isArray:true,
     })
-    @Column('text', {
-        array:true,
-        default:[],        
+    @Column('simple-array', {
+        nullable: true,
+        default: '',
     })
     tags:string[];
 

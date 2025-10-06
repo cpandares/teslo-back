@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, MethodNotAllowedException } from '@nestjs/common';
 import { SeedService } from './seed.service';
 import { Auth } from 'src/auth/decorators';
 import { ValidRoles } from 'src/auth/interfaces';
@@ -12,7 +12,7 @@ export class SeedController {
   @Get()
   //@Auth(ValidRoles.user)
   executeSeed() {
-    return this.seedService.executeSeed();
+    throw new MethodNotAllowedException('Read-only mode: seeding is disabled');
   }
 
   @Get('massive')
@@ -21,9 +21,7 @@ export class SeedController {
     @Query('total') total?: string,
     @Query('chunk') chunk?: string
   ) {
-    const totalNum = Math.max(1, Math.min(1_000_000, Number(total) || 100_000));
-    const chunkNum = Math.max(500, Math.min(20_000, Number(chunk) || 5_000));
-    return this.seedService.massiveProductsSeed(totalNum, chunkNum);
+    throw new MethodNotAllowedException('Read-only mode: massive seeding is disabled');
   }
 
 }

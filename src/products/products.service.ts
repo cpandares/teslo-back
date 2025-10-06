@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException, MethodNotAllowedException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductImage,Product } from './entities';
+import { ProductImage,Product, Articulo } from './entities';
 import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
@@ -19,142 +19,96 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductImage)
     private readonly productImageRepository: Repository<ProductImage>,
+    @InjectRepository(Articulo)
+    private readonly articuloRepository: Repository<Articulo>,
     private readonly dataSource: DataSource
   ) {}
 
   async create(createProductDto: CreateProductDto, user: User) {
-    try {
-      const { images = [], ...productDetails } = createProductDto;
-      const product = this.productRepository.create({
-        ...productDetails,
-        images: images.map(image => this.productImageRepository.create({ url: image })),
-        user,
-      });
-      await this.productRepository.save(product);
-      return {
-        ...product,
-        images,
-      };
-    } catch (error) {
-
-      this.handleDBErrors(error);
-
-     
-    }
+    throw new MethodNotAllowedException('Read-only mode: create is disabled');
   }
 
   // High-throughput bulk insert for massive seeding. Expects pre-validated and unique fields (title, slug).
   async bulkInsertProducts(products: Array<Partial<Product>>) {
-    if (!products?.length) return { identifiers: [], generatedMaps: [], raw: [] };
-    try {
-      // Use insert to bypass lifecycle hooks for speed; caller must compute slug.
-      const result = await this.productRepository
-        .createQueryBuilder()
-        .insert()
-        .into(Product)
-        .values(products)
-        .execute();
-      return result;
-    } catch (error) {
-      this.handleDBErrors(error);
-    }
+    throw new MethodNotAllowedException('Read-only mode: bulk insert is disabled');
   }
 
   async findAll(paginationDto: PaginationDto) {
     const { offset, limit } = paginationDto;
-    const products = await this.productRepository.find({
+    const [items, total] = await this.articuloRepository.findAndCount({
       skip: offset,
       take: limit,
-      relations: {
-        images: true,
-      },
+      order: { id: 'ASC' },
     });
-    const totalRegistros = await this.productRepository.count();
-    return products.map( product => ({
-      totalRegistros,
-      ...product,
-      images: product.images?.map( image => image.url )
-    }) )
+
+    return items.map((a) => ({
+      totalRegistros: total,
+      id: String(a.id),
+      title: a.descripcion ?? a.codigo ?? `Articulo ${a.id}`,
+      price: a.precio ?? 0,
+      description: a.composicion ?? null,
+      slug: (a.descripcion ?? `articulo_${a.id}`).toLowerCase().replace(/\s+/g, '_'),
+      stock: a.cantidad ?? 0,
+      sizes: [],
+      gender: 'unisex',
+      tags: [a.departamento, a.categoria, a.cod_departamento].filter(Boolean) as string[],
+      images: [],
+    }));
   }
 
   async findOne(term: string) {
+    // Search articulos by id or code/description
+    let articulo: Articulo | null = null;
+    if (isUUID(term)) {
+      // UUID no aplica en articulos; intenta parsear a int
+      articulo = null;
+    }
 
+    // Try by numeric id
+    const idNum = Number(term);
+    if (!articulo && Number.isInteger(idNum)) {
+      articulo = await this.articuloRepository.findOne({ where: { id: idNum } });
+    }
 
-    let product: Product;
+    // Try by codigo or descripcion (case-insensitive contains)
+    if (!articulo) {
+      articulo = await this.articuloRepository.createQueryBuilder('a')
+        .where('a.codigo = :codigo', { codigo: term })
+        .orWhere('UPPER(a.descripcion) = :desc', { desc: term.toUpperCase() })
+        .getOne();
+    }
 
-    if(isUUID(term)) {
-      product = await this.productRepository.findOneBy({ id: term }) as Product;
-    }else{
-      //product = await this.productRepository.findOneBy({ slug: term }) as Product;
-      const query = this.productRepository.createQueryBuilder('prod');
-      product = await query.where('UPPER(title) =:title or slug =:slug', { title: term.toLocaleUpperCase(), slug: term })
-        .leftJoinAndSelect('prod.images', 'prodImages')
-        .getOne() as Product; 
-    } 
-    
-    if (!product) {
-      throw new NotFoundException(`Product with id ${term} not found`);
-    } 
-    return product;
+    if (!articulo) {
+      throw new NotFoundException(`Articulo not found for term ${term}`);
+    }
+    // Map to product-like shape
+    return {
+      id: String(articulo.id),
+      title: articulo.descripcion ?? articulo.codigo ?? `Articulo ${articulo.id}`,
+      price: articulo.precio ?? 0,
+      description: articulo.composicion ?? null,
+      slug: (articulo.descripcion ?? `articulo_${articulo.id}`).toLowerCase().replace(/\s+/g, '_'),
+      stock: articulo.cantidad ?? 0,
+      sizes: [],
+      gender: 'unisex',
+      tags: [articulo.departamento, articulo.categoria, articulo.cod_departamento].filter(Boolean) as string[],
+      images: [],
+    } as any;
   }
 
   async findOnePlain(term: string) {
-    const { images, ...product } = await this.findOne(term);
-    return {
-      ...product,
-      images: images?.map(image => image.url),
-    };
+    // findOne already returns a plain object in read-only mapping
+    return await this.findOne(term);
   }
 
   async update(id: string, updateProductDto: UpdateProductDto, user: User ) {
-    const { images, ...toUpdate } = updateProductDto;
-    const product = await this.productRepository.preload({
-      id,
-      ...toUpdate
-    })
-
-    if (!product) {
-      throw new NotFoundException(`Product with id ${id} not found`);
-    }
-
-    // If images are provided, update them
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      if (images) {
-        // Delete old images
-        await this.productImageRepository.delete({ product: { id } });
-        product.images = images.map(image => this.productImageRepository.create({ url: image }));
-
-      }else{
-        // If no images are provided, keep the existing images
-        const existingProduct = await this.productRepository.findOneBy({ id });
-        product.images = existingProduct?.images;
-      }
-      product.user = user; // Update the user who modified the product
-      await this.productRepository.save(product);
-      await queryRunner.commitTransaction();
-      await queryRunner.release();
-      return this.findOnePlain(id);
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      await queryRunner.release();
-      this.logger.error('Transaction failed', error);
-      this.handleDBErrors(error);
-    }
+    throw new MethodNotAllowedException('Read-only mode: update is disabled');
 
 
   }
 
   async remove(id: string) {
-    await this.findOne(id); // Check if the product exists before trying to delete it
-    const result = await this.productRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Product with id ${id} not found`);
-    }
-    return result;
+    throw new MethodNotAllowedException('Read-only mode: delete is disabled');
   }
 
 
@@ -170,15 +124,7 @@ export class ProductsService {
 
 
   async deleteAllProducts() {
-    const query = this.productRepository.createQueryBuilder('product');
-    try {
-      return await query
-        .delete()
-        .where({})
-        .execute();
-    } catch (error) {
-      this.handleDBErrors(error);
-    }
+    throw new MethodNotAllowedException('Read-only mode: deleteAllProducts is disabled');
   }
 
 }

@@ -16,15 +16,22 @@ import { MessagesWsModule } from './messages-ws/messages-ws.module';
   imports: [
      ConfigModule.forRoot(),
      TypeOrmModule.forRoot({
-      type: 'postgres',
+      type: 'mssql',
       host: process.env.DB_HOST,
       port: +process.env.DB_PORT!,
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: true, // set to false in production
+        // Never auto-sync schema in read-only mode to avoid ALTER TABLE attempts
+        synchronize: process.env.DB_SYNC === 'true',
+      dropSchema: process.env.DB_DROP_SCHEMA === 'true', // useful for dev to rebuild schema
+      options: {
+        encrypt: true,
+        trustServerCertificate: true, // Permite certificados self-signed
+      },
      }),
+
      ProductsModule,
      CommonModule,
      SeedModule,

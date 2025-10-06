@@ -1,38 +1,43 @@
 import { Product } from "src/products/entities";
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
-
 @Entity('users')
 export class User {
 
     @PrimaryGeneratedColumn('uuid')
     id: string
 
-    @Column('text',{
+    @Column({
+        type: 'varchar',
+        length: 255,
         unique:true,
         nullable:false,
     })
     email: string
 
-    @Column('text',{
+    @Column({
+        type: 'varchar',
+        length: 255,
         nullable:false,
         select: false,
     })
     password: string
 
-    @Column('text',{
+    @Column({
+        type: 'varchar',
+        length: 255,
         nullable:false,
     })
     fullName: string
 
-    @Column('boolean', {
+    @Column({
+        type: 'bit',
         default: true
     })
     isActive: boolean;
 
-    @Column('text', {
-        array: true,
-        default: ['user']
+    @Column('simple-array', {
+        nullable: true,
     })
     roles: string[];
 
@@ -48,6 +53,9 @@ export class User {
     @BeforeInsert()
     checkFieldsBeforeInsert() {
         this.email = this.email.toLowerCase().trim();
+        if (!this.roles || this.roles.length === 0) {
+            this.roles = ['user'];
+        }
     }
 
     @BeforeUpdate()

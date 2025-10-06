@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, MethodNotAllowedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 import { LoginUserDto,CreateUserDto } from './dto';
@@ -20,7 +20,7 @@ export class AuthController {
 
   @Post('register')
   create(@Body() createUserDto: CreateUserDto) {
-    return this.authService.create(createUserDto);
+    throw new MethodNotAllowedException('Read-only mode: user registration is disabled');
   }
 
   @Post('login')

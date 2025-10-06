@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, BadRequestException, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, BadRequestException, Res, MethodNotAllowedException } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { fileValidator } from './helpers/fileValidator';
@@ -29,27 +29,8 @@ export class FilesController {
   }
 
   @Post('product')
-  @UseInterceptors(FileInterceptor('file', {
-    fileFilter: fileValidator,
-    storage: diskStorage({
-      destination: './uploads/products',
-      filename: fileNamed
-    })
-  }))
-  uploadProductImage( @UploadedFile() file: Express.Multer.File ) {
-
-    
-    if(!file){
-      throw new BadRequestException("File is not an image");
-    }
-
-    const secureUrl = `${this.configService.get('HOST_API')}/files/product/${file.filename}`;
-    
-
-    return {
-      secureUrl
-
-    };
+  uploadProductImage( @UploadedFile() _file: Express.Multer.File ) {
+    throw new MethodNotAllowedException('Read-only mode: file uploads are disabled');
   }
 
 }
